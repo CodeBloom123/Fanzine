@@ -1,0 +1,6 @@
+{
+  "name": "Maquetación Fanzines",
+  "description": "Aplicación para maquetar e imponer fanzines (8, 10, 12 o 16 páginas) en formato cuadernillo A4 listo para imprimir.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
