@@ -1,6 +1,6 @@
 {
   "name": "Maquetación Fanzines",
-  "description": "Aplicación para maquetar e imponer fanzines (8, 10, 12 o 16 páginas) en formato cuadernillo A4 listo para imprimir.",
+  "description": "Aplicación para maquetar e imponer fanzines en formato cuadernillo A5, mini fanzine de 1 hoja A4 y Prueba Galicia (importación de dobles páginas PDF de Canva/Slides) con fidelidad vectorial.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

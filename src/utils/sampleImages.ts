@@ -107,7 +107,11 @@ export async function generateSampleFanzinePages(targetPageCount: number = 12): 
         // Geometric artsy shapes
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.beginPath();
-        ctx.roundRect(canvas.width / 2 - 180, canvas.height / 2 + 40, 360, 220, 20);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(canvas.width / 2 - 180, canvas.height / 2 + 40, 360, 220, 20);
+        } else {
+          ctx.rect(canvas.width / 2 - 180, canvas.height / 2 + 40, 360, 220);
+        }
         ctx.fill();
 
         ctx.fillStyle = '#1e293b';

@@ -1,10 +1,12 @@
 import React from 'react';
 import { BookOpen, Code2, Sparkles, Download, Printer } from 'lucide-react';
+import { FanzineFormat } from '../types';
 
 const LOGO_URL = '/ternura_radikal_logo.jpg';
 
 interface HeaderProps {
   pageCount?: number;
+  fanzineFormat?: FanzineFormat;
   onGenerateSample: () => void;
   onOpenPythonModal: () => void;
   onGeneratePdf: () => void;
@@ -14,6 +16,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   pageCount = 12,
+  fanzineFormat = 'saddle-stitch',
   onGenerateSample,
   onOpenPythonModal,
   onGeneratePdf,
@@ -45,7 +48,11 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="text-slate-200">Maquetación Fanzines</span>
                 </h1>
                 <span className="bg-pink-500/20 text-pink-300 text-xs px-2.5 py-0.5 rounded-full font-medium border border-pink-500/30 hidden sm:inline-block">
-                  Cuadernillo A4 ({pageCount} Pág)
+                  {fanzineFormat === 'galicia-pdf'
+                    ? `Prueba Galicia (${pageCount} Pág)`
+                    : fanzineFormat === 'mini-zine-8'
+                    ? 'Mini Fanzine (1 Hoja A4)'
+                    : `Cuadernillo A4 (${pageCount} Pág)`}
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5 font-medium">
@@ -56,15 +63,17 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <button
-              id="generate-sample-btn"
-              onClick={onGenerateSample}
-              className="inline-flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg text-indigo-300 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800/80 transition shadow-sm hover:text-white"
-              title="Generar imágenes de prueba ilustradas para probar inmediatamente"
-            >
-              <Sparkles className="w-4 h-4 mr-1.5 text-indigo-400" />
-              Auto-Cargar Ejemplo ({pageCount} pág)
-            </button>
+            {fanzineFormat !== 'galicia-pdf' && (
+              <button
+                id="generate-sample-btn"
+                onClick={onGenerateSample}
+                className="inline-flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg text-indigo-300 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800/80 transition shadow-sm hover:text-white"
+                title="Generar imágenes de prueba ilustradas para probar inmediatamente"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5 text-indigo-400" />
+                Auto-Cargar Ejemplo ({pageCount} pág)
+              </button>
+            )}
 
             <button
               id="python-code-btn"
@@ -94,7 +103,9 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-1.5" />
-                  Descargar PDF Impresión ({pagesLoadedCount}/{pageCount})
+                  {fanzineFormat === 'galicia-pdf'
+                    ? `DESCARGAR PDF PRUEBA GALICIA (${pagesLoadedCount}/${pageCount})`
+                    : `Descargar PDF Impresión (${pagesLoadedCount}/${pageCount})`}
                 </>
               )}
             </button>

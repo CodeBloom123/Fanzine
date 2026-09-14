@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getImpositionPlan, ImpositionConfig, PageImage } from '../types';
-import { FileText, AlertCircle, Check } from 'lucide-react';
+import { FileText, Check } from 'lucide-react';
+import { PageView } from './PageView';
+import { MiniZineSpreadPreview } from './MiniZineSpreadPreview';
 
 interface ImpositionPreviewProps {
   pages: Map<number, PageImage>;
@@ -8,23 +10,39 @@ interface ImpositionPreviewProps {
 }
 
 export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, config }) => {
+  // If Mini Fanzine format is selected, show the specific 1-sheet 2x4 layout
+  if (config.fanzineFormat === 'mini-zine-8') {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <MiniZineSpreadPreview pages={pages} config={config} />
+      </div>
+    );
+  }
+
+  return <SaddleStitchImpositionPreview pages={pages} config={config} />;
+};
+
+const SaddleStitchImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, config }) => {
   const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(0);
 
   const pageCount = config.pageCount || 12;
   const impositionPlan = getImpositionPlan(pageCount);
 
-  // Reset selectedSheetIndex if out of bounds on pageCount change
+  // Clamp selectedSheetIndex safely to avoid blank screens or out of bounds
+  const safeSheetIndex = Math.min(selectedSheetIndex, Math.max(0, impositionPlan.length - 1));
+
   useEffect(() => {
     if (selectedSheetIndex >= impositionPlan.length) {
       setSelectedSheetIndex(0);
     }
   }, [pageCount, impositionPlan.length, selectedSheetIndex]);
 
-  const activeSpread = impositionPlan[selectedSheetIndex] || impositionPlan[0];
+  const activeSpread = impositionPlan[safeSheetIndex] || impositionPlan[0];
 
   const leftPage = pages.get(activeSpread.leftPageNum);
   const rightPage = pages.get(activeSpread.rightPageNum);
 
+  const isGalicia = config.fanzineFormat === 'galicia-pdf';
   const totalPhysicalSheets = impositionPlan.length / 2;
 
   return (
@@ -36,11 +54,13 @@ export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, con
           <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
             <span>2. Vista Previa de Imposición en Pliegos A4</span>
             <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800/80 px-2.5 py-0.5 rounded-full font-medium">
-              Saddle-Stitch {pageCount} Pág
+              {isGalicia ? `Prueba Galicia · ${pageCount} Pág` : `Cuadernillo A5 · ${pageCount} Pág`}
             </span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Comprueba cómo se distribuyen las páginas en las caras delanteras y traseras de las {totalPhysicalSheets} hojas de papel A4.
+            {isGalicia
+              ? `Comprueba la imposición de las mitades divididas en las ${totalPhysicalSheets} hojas A4 para impresión a doble cara.`
+              : `Comprueba cómo se distribuyen las páginas en las caras delanteras y traseras de las ${totalPhysicalSheets} hojas de papel A4.`}
           </p>
         </div>
 
@@ -53,7 +73,7 @@ export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, con
               id={`sheet-tab-${idx}`}
               onClick={() => setSelectedSheetIndex(idx)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
-                selectedSheetIndex === idx
+                safeSheetIndex === idx
                   ? 'bg-pink-600 text-white shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -90,36 +110,42 @@ export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, con
         <div className="relative w-full h-full flex items-center justify-between gap-0 bg-slate-900/60 rounded-xl overflow-hidden p-2">
           
           {/* Left Page Box (A5) */}
-          <div className="relative flex-1 h-full flex flex-col items-center justify-center bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 p-2 group">
-            {leftPage ? (
-              <img
-                src={leftPage.dataUrl}
-                alt={`Página ${activeSpread.leftPageNum}`}
-                className="max-h-full max-w-full object-contain shadow"
-              />
-            ) : (
-              <div className="text-center p-4">
-                <AlertCircle className="w-8 h-8 text-slate-600 mx-auto mb-1" />
-                <span className="text-xs text-slate-500 block font-medium">Página {activeSpread.leftPageNum} Sin Cargar</span>
-                <span className="text-[10px] text-slate-600">
-                  {activeSpread.leftPageNum > pageCount ? '(Página extra para notas)' : '(Se imprimirá en blanco)'}
-                </span>
-              </div>
-            )}
-
+          <div className="relative flex-1 h-full flex flex-col items-center justify-center bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 p-1 group">
+            <PageView
+              page={leftPage}
+              pageNumber={activeSpread.leftPageNum}
+              config={config}
+              isLeftPage={true}
+              showBadge={config.showPageNumbers}
+              aspectRatioClass="h-full w-full"
+            />
             {/* Page number badge indicator */}
-            <div className="absolute bottom-2 left-2 bg-slate-900/90 border border-slate-700 text-amber-300 font-mono font-bold text-xs px-2 py-0.5 rounded shadow">
+            <div className="absolute bottom-2 left-2 z-20 bg-slate-900/90 border border-slate-700 text-amber-300 font-mono font-bold text-xs px-2 py-0.5 rounded shadow">
               PÁGINA {activeSpread.leftPageNum}
             </div>
           </div>
 
           {/* Center Spine Fold Line (Lomo) & Gutter Indicator */}
           <div className="relative h-full w-8 flex flex-col items-center justify-between py-2 shrink-0">
+            {/* Spine Custom Color Strip */}
+            {config.useCustomSpineColor &&
+              (config.spineApplyScope !== 'cover-only' ||
+                (activeSpread.sheetNumber === 1 && activeSpread.side === 'front')) && (
+                <div
+                  className="absolute inset-y-0 left-1/2 -translate-x-1/2 z-5 shadow-sm border-x border-slate-700/50"
+                  style={{
+                    backgroundColor: config.spineColor || '#1e293b',
+                    width: `${Math.max((config.gutterMm || 2) * 4, 14)}px`,
+                  }}
+                  title={`Franja de lomo coloreada (${config.spineColor})`}
+                />
+              )}
+
             {/* Spine Fold Dash */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 border-r-2 border-dashed border-pink-400/60 z-10" />
 
             {/* Gutter Highlight Box */}
-            {config.gutterMm > 0 && (
+            {config.gutterMm > 0 && !config.useCustomSpineColor && (
               <div
                 className="absolute inset-y-0 left-1/2 -translate-x-1/2 bg-pink-500/10 border-x border-pink-500/30 z-0"
                 style={{ width: `${Math.min(config.gutterMm * 3, 24)}px` }}
@@ -133,25 +159,17 @@ export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, con
           </div>
 
           {/* Right Page Box (A5) */}
-          <div className="relative flex-1 h-full flex flex-col items-center justify-center bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 p-2 group">
-            {rightPage ? (
-              <img
-                src={rightPage.dataUrl}
-                alt={`Página ${activeSpread.rightPageNum}`}
-                className="max-h-full max-w-full object-contain shadow"
-              />
-            ) : (
-              <div className="text-center p-4">
-                <AlertCircle className="w-8 h-8 text-slate-600 mx-auto mb-1" />
-                <span className="text-xs text-slate-500 block font-medium">Página {activeSpread.rightPageNum} Sin Cargar</span>
-                <span className="text-[10px] text-slate-600">
-                  {activeSpread.rightPageNum > pageCount ? '(Página extra para notas)' : '(Se imprimirá en blanco)'}
-                </span>
-              </div>
-            )}
-
+          <div className="relative flex-1 h-full flex flex-col items-center justify-center bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 p-1 group">
+            <PageView
+              page={rightPage}
+              pageNumber={activeSpread.rightPageNum}
+              config={config}
+              isLeftPage={false}
+              showBadge={config.showPageNumbers}
+              aspectRatioClass="h-full w-full"
+            />
             {/* Page number badge indicator */}
-            <div className="absolute bottom-2 right-2 bg-slate-900/90 border border-slate-700 text-indigo-300 font-mono font-bold text-xs px-2 py-0.5 rounded shadow">
+            <div className="absolute bottom-2 right-2 z-20 bg-slate-900/90 border border-slate-700 text-indigo-300 font-mono font-bold text-xs px-2 py-0.5 rounded shadow">
               PÁGINA {activeSpread.rightPageNum}
             </div>
           </div>
@@ -179,7 +197,7 @@ export const ImpositionPreview: React.FC<ImpositionPreviewProps> = ({ pages, con
               key={sheetIdx}
               onClick={() => setSelectedSheetIndex(sheetIdx * 2)}
               className={`p-3 rounded-xl border transition cursor-pointer ${
-                Math.floor(selectedSheetIndex / 2) === sheetIdx
+                Math.floor(safeSheetIndex / 2) === sheetIdx
                   ? 'bg-pink-950/40 border-pink-600/80 text-slate-100 shadow'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
               }`}
